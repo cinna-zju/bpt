@@ -30,38 +30,42 @@ public:
         fseek(fp, addr, SEEK_SET);
         fwrite(&size, sizeof(int), 1, fp);
         fwrite(&num, sizeof(int), 1, fp);
-        fwrite(key, sizeof(T), size, fp);
-        fwrite(ptr, sizeof(offset), size+1, fp);
+        fwrite(key, sizeof(T), num, fp);
+        fwrite(ptr, sizeof(offset), num+1, fp);
     };
 
     void read(offset addr, FILE* fp){
         fseek(fp, addr, SEEK_SET);
         fread(&size, sizeof(int), 1, fp);
         fread(&num, sizeof(int), 1, fp);
-        fread(key, sizeof(T), size, fp);
-        fread(ptr, sizeof(offset), size+1, fp);
+        fread(key, sizeof(T), num, fp);
+        fread(ptr, sizeof(offset), num+1, fp);
     };
 
     void print(){
         cout<<size<<" "<<num<<endl;
-        for(int i = 0; i < size; i++){
+        for(int i = 0; i < num; i++){
             cout<<key[i]<<' ';
         }
         cout<<endl;
 
-        for(int i = 0; i < size+1; i++){
+        for(int i = 0; i < num+1; i++){
             cout<<ptr[i]<<' ';
         }
         cout<<endl;
     }
 
     void insert(T val , offset addr, int idx){
-        for(int i = idx; i < size-1; i++){
-            key[i+1] = key[i];
-            ptr[i+2] = ptr[i+1];
+        for(int i = num; i >= idx; i--){
+            key[i] = key[i-1];
+            ptr[i+1] = ptr[i];
         }
         key[idx] = val;
         ptr[idx+1] = addr;
+        num++;
+        if(num == size){
+            //split();
+        }
     }
 
 };
@@ -74,20 +78,12 @@ public:
     offset root;//根在文件内的偏移量
     FILE *Bptfile;
     FILE *RecFile;
-    void read(offset root){
-        Node<T> r;
-        r.read(root, Bptfile);
-    };
+
 
     void write(Node<T> &r){
         r.write(0, Bptfile);
     }
     void init(){Node<T> r; write(r);};
-    void print(offset cur){
-        Node<T> r;
-        r.read(cur, Bptfile);
-        r.print();
-    }
     offset newNode();
 
 public:
@@ -96,6 +92,8 @@ public:
 
     void insert(T, offset);
     void split(Node<T>&, Node<T>&, int);
+    void print(offset);
+
 
     pair<offset, offset> search(T, Node<T>);
 
@@ -108,7 +106,7 @@ bPlusTree<T>::bPlusTree(string filename)
     root = 0;
     fileName = filename;
 
-    if( (Bptfile = fopen(fileName.c_str(), "rb+")) == false ){
+    if( (Bptfile = fopen(fileName.c_str(), "rb+")) == NULL ){
         init();
         Bptfile = fopen(fileName.c_str(), "rb+");
     }
@@ -143,13 +141,14 @@ void bPlusTree<T>::insert(T val, offset addr)
     Node<T> r;
     r.read(root, Bptfile);
     int idx;
-    for(idx = 0; idx < r.size; idx++){
+    for(idx = 0; idx < r.num; idx++){
         if(val < r.key[idx]) break;
     }
     cout<<"idx:"<<idx<<endl;
-    r.insert(val, addr, idx-1);
+    r.insert(val, addr, idx);
     r.write(root, Bptfile);
 }
+
 
 
 template <typename T>
@@ -158,6 +157,19 @@ void bPlusTree<T>::split(Node<T> &parent, Node<T> &current, int childNum)
 
 }
 
+template <typename T>
+void bPlusTree<T>::print(offset cur)
+{
+    Node<T> r;
+    r.read(cur, Bptfile);
+
+    if(r.isLeaf == false)
+        r.print();
+
+    // for(int i = 0; i < r.size; i++){
+    //     print(r.ptr[i]);
+    // }
+}
 // template <typename T>
 // int insertInLeaf(Node L, T val, Node<T>* ptr)
 // {

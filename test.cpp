@@ -10,23 +10,13 @@ int main()
 
     bPlusTree<int> bpt(path);
 
+    bpt.print(bpt.root);
 
-    bpt.read(bpt.root);
-
-    //bpt.insert(1, 1000);
-    bpt.insert(3, 1001);
-
-
+    bpt.insert(6,1006);
     bpt.print(bpt.root);
 
 
-    //cerr << bpt.root<<' '<< bpt.Bptfile <<endl;
 
-    // int data = 123;
-    // offset key = 2321;
-    //
-    // bpt.insertIntoTree(bpt.root, 0, 2321);
-    // bpt.insertIntoTree(bpt.root, 1, 2325);
 
 
 }
