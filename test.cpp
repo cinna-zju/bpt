@@ -7,22 +7,32 @@ using namespace std;
 int main()
 {
     string path = "./data.txt";
-    int v[7] = {1,3,2,5,4,7,6};
-    int p[7] = {1001,1003,1002,1005,1004,1007,1006};
-    bPlusTree<int> bpt(path);
 
-    // for(int i = 0; i < 5; i++){
-    //     bpt.insert(v[i], p[i]);
-    // }
+    int v[20] = {1,3,2,5,4,7,6};
+    int p[20] = {1001,1003,1002,1005,1004,1007,1006};
+    bPlusTree<int> bpt(path);
+    //bpt.init();
+    bpt.getRoot();
+    //bpt.print(bpt.root);
+
     //
-    // bpt.insert(7,1007);
-    //
-    for(int i = 1; i <= 22; i++){
+    for(int i = 1; i <= 24; i++){
         bpt.insert(i, 1000+i);
     }
-
     bpt.print(bpt.root);
-    //bpt.printLeaf();
+    //
+    // for(int i = 1; i <= 24; i++){
+    //      bpt.insert(i, 1000+i);
+    // }
+    //
+    // bpt.print(bpt.root);
+    // bpt.printLeaf();
 
+    // cout << bpt.search(3)<<endl;
+    // cout << bpt.search(24)<<endl;
+    // cout << bpt.search(1)<<endl;
+    // cout << bpt.search(16)<<endl;
+    // cout << bpt.search(0)<<endl;
+    // cout << bpt.search(160)<<endl;
 
 }
