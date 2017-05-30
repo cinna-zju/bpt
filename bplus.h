@@ -304,3 +304,452 @@ offset bPlusTree<T>::search(T val)
     }
     return -1;
 }
+
+template <typename T>
+void bPlusTree<T>::delete(T val, offset cur)
+{
+    int i, j;
+    Node<T> x;
+    x.read(cur, Bptfile);
+    for(i = 0; i < x.num && val > x.key[i]; i++)
+    ;
+    //find in current node
+    if(i < x.num && val == x.key[i]){
+        //find in inner node
+        if(!x.isLeaf){
+            Node<T> child;
+            child.read(x.ptr[i], Bptfile);
+            //child is leaf node
+            if(child.isLeaf){
+                if(child.num > size/2){
+                    //A
+                    x.key[i] = child.key[child.num - 2];
+                    child.num--;
+
+                    x.write(cur, Bptfile);
+                    child.write(x.ptr[i], Bptfile);
+                    return ;
+
+
+                }else{
+                    if(i > 0){
+                        //has lsibling node
+                        Node<T> lchild;
+                        lchild.read(x.ptr[i], Bptfile);
+
+                        if(lchild.num > size/2){
+                            //B
+                            for(j = child.num; j > 0; j--){
+                                child.key[j] = child.key[j-1];
+                                child.ptr[j] = child.ptr[j-1];
+                            }
+
+                            child.key[0] = x.key[i-1];
+                            child.ptr[0] = lchild.ptr[lchild.num - 1];
+                            child.num++;
+                            lchild.num--;
+
+                            x.key[i-1] = lchild.key[lchild.num - 1];
+                            x.key[i] = child.key[child.num - 2];
+
+                            x.write(cur,Bptfile);
+                            lchild.write(x.ptr[i-1],Bptfile);
+                            child.write(x.ptr[i], Bptfile);
+
+                            //return ;
+                        }else{
+                            //C
+                            for(j = 0; j < child.num; j++){
+                                lchild.key[lchild.num + j] = child.key[j];
+                                lchild.ptr[lchild.num + j] = child.ptr[j];
+                            }
+                            lchild.num += child.num;
+                            lchild.ptr[size] = child.ptr[size];
+
+                            for(j = i - 1; j < x.num - 1; j++){
+                                x.key[j] = x.key[j+1];
+                                x.ptr[j+1] = x.ptr[j+2];
+                            }
+
+                            x.num--;
+
+                            x.key[i-1] = lchild.key[lchild.num-2];
+
+                            x.write(cur,Bptfile);
+                            lchild.write(x.ptr[i-1], Bptfile);
+
+                            i--;
+
+                        }
+
+                    }else{
+                        //only right sibling
+                        Node<T> rchild;
+                        rchild.read(x.ptr[i+1], Bptfile);
+
+                        if(rchild.num > size/2){
+                            //D
+                            x.key[i] = rchild.key[0];
+                            child.key[child.num] = rchild.key[0];
+                            child.ptr[child.num] = rchild.ptr[0];
+                            child.num++;
+                        
+
+                            for(j = 0; j < rchild.num - 1; j++){
+                                rchild.key[j] = rchild.key[j+1];
+                                rchild.ptr[j] = rchild.ptr[j+1];
+                            }
+
+                            rchild.num--;
+
+                            x.write(cur, Bptfile);
+                            child.write(x.ptr[i], Bptfile);
+                            rchild.write(x.ptr[i+1], Bptfile);
+                        }else{
+                            //E
+                            for(j = 0; j < rchild.num; j++){
+                                child.key[child.num+j] = rchild.key[j];
+                                child.ptr[child.num+j] = rchild.ptr[j];
+                            }
+                            child.num += rchild.num;
+                            child.ptr[size] = rchild.ptr[size];
+
+                            for(j = i; j < x.num; j++){
+                                x.key[j] = x.key[j+1];
+                                x.ptr[j+1] = x.ptr[j+2];
+                            }
+                            x.num--;
+
+                            x.write(cur,Bptfile);
+                            child.write(x.ptr[i], Bptfile);
+                        }
+                    }
+
+                }
+            }else{
+                //F
+                offset result = search(val);
+                Node<T> last;
+                last.read(result, Bptfile);
+                x.key[i] = last.key[last.num - 2];
+                x.write(cur, Bptfile);
+
+                if(child.num > size/2){
+                    //H
+                }else{
+                    if(i > 0){
+                        Node<T> lchild;
+                        lchild.read(x.ptr[i], Bptfile);
+
+                        if(lchild.num > size/2){
+                            // I
+                            for(j = child.num; j > 0; j--){
+                                child.key[j] = child.key[j-1];
+                                child.ptr[j+1] = child.ptr[j];
+                            }
+
+                            child.ptr[1] = child.ptr[0];
+                            child.key[0] = x.key[i-1];
+                            child.ptr[0] = lchild.ptr[lchild.num];
+
+                            child.num++;
+                            x.write(cur, Bptfile);
+                            lchild.write(x.ptr[i-1], Bptfile);
+                            child.write(x.ptr[i], Bptfile);
+                        }else{
+                            //J
+                            lchild.key[lchild.num] = x.key[i-1];
+                            lchild.num++;
+                            for(j = 0; j < child.num; j++){
+                                lchild.key[lchild.num+j] = child.key[j];
+                                lchild.ptr[lchild.num+j] = child.ptr[j];
+                            }
+                            lchild.ptr[lchild.num+j] = lchild.ptr[j];
+                            lchild.num += child.num;
+
+                            for(j = i-1; j < x.num; j++){
+                                x.key[j] = x.key[j+1];
+                                x.ptr[j+1] = x.ptr[j+2];
+                            }
+                            x.num--;
+
+                            x.write(cur, Bptfile);
+                            lchild.write(x.ptr[i], Bptfile);
+
+                            i--;
+                        }
+                    }else{
+                        //only right sibling
+                        Node<T> rchild;
+                        rchild.read(x.ptr[i+1], Bptfile);
+
+                        if(rchild.num > size/2){
+                            //K
+                            child.key[child.num] = x.key[i];
+                            child.num++;
+
+                            child.ptr[child.num] = rchild.ptr[0];
+                            x.key[i] = rchild.key[0];
+
+                            for(j=0; j < rchild.num - 1; j++){
+                                rchild.key[j] = rchild.key[j+1];
+                                rchild.ptr[j] = rchild.ptr[j+1];
+                            }
+                            rchild.ptr[j] = rchild.ptr[j+1];
+                            rchild.num--;
+
+                            x.write(cur, Bptfile);
+                            child.write(x.ptr[i], Bptfile);
+                            rchild.write(x.ptr[i+1], Bptfile);
+                        }else{
+                            //L
+                            child.key[child.num] = x.key[i];
+                            child.num++;
+
+                            for(j = 0; j < rchild.num; j++){
+                                child.key[child.num+j] = rchild.key[j];
+                                child.ptr[child.num+j] = rchild.ptr[j];
+                            }
+                            child.ptr[child.num+j] = rchild.ptr[j];
+                            child.num += rchild.num;
+
+                            for(j = i; j < x.num; j++){
+                                x.key[j] = x.key[j+1];
+                                x.ptr[j+1] = x.ptr[j+2];
+
+                            }
+                            x.num--;
+
+                            x.write(cur, Bptfile);
+                            child.write(x.ptr[i], Bptfile);
+
+                        }
+                    }
+                }
+
+            }
+            delete(val, x.ptr[i]);
+
+        }else{
+            //G
+            for(j = i; j < x.num - 1; j++){
+                x.key[j] = x.key[j+1];
+                x.ptr[j] = x.ptr[j+1];
+
+            }
+            x.num--;
+            x.write(cur, Bptfile);
+            return ;
+        }
+
+    }else{
+        if(!x.isLeaf){
+            Node<T> child;
+            child.read(x.ptr[i], Bptfile);
+
+            if(!child.isLeaf){
+                //H
+            }else{
+                else{
+                    if(i > 0){
+                        Node<T> lchild;
+                        lchild.read(x.ptr[i], Bptfile);
+
+                        if(lchild.num > size/2){
+                            // I
+                            for(j = child.num; j > 0; j--){
+                                child.key[j] = child.key[j-1];
+                                child.ptr[j+1] = child.ptr[j];
+                            }
+
+                            child.ptr[1] = child.ptr[0];
+                            child.key[0] = x.key[i-1];
+                            child.ptr[0] = lchild.ptr[lchild.num];
+
+                            child.num++;
+                            x.write(cur, Bptfile);
+                            lchild.write(x.ptr[i-1], Bptfile);
+                            child.write(x.ptr[i], Bptfile);
+                        }else{
+                            //J
+                            lchild.key[lchild.num] = x.key[i-1];
+                            lchild.num++;
+                            for(j = 0; j < child.num; j++){
+                                lchild.key[lchild.num+j] = child.key[j];
+                                lchild.ptr[lchild.num+j] = child.ptr[j];
+                            }
+                            lchild.ptr[lchild.num+j] = lchild.ptr[j];
+                            lchild.num += child.num;
+
+                            for(j = i-1; j < x.num; j++){
+                                x.key[j] = x.key[j+1];
+                                x.ptr[j+1] = x.ptr[j+2];
+                            }
+                            x.num--;
+
+                            x.write(cur, Bptfile);
+                            lchild.write(x.ptr[i], Bptfile);
+
+                            i--;
+                        }
+                    }else{
+                        //only right sibling
+                        Node<T> rchild;
+                        rchild.read(x.ptr[i+1], Bptfile);
+
+                        if(rchild.num > size/2){
+                            //K
+                            child.key[child.num] = x.key[i];
+                            child.num++;
+
+                            child.ptr[child.num] = rchild.ptr[0];
+                            x.key[i] = rchild.key[0];
+
+                            for(j=0; j < rchild.num - 1; j++){
+                                rchild.key[j] = rchild.key[j+1];
+                                rchild.ptr[j] = rchild.ptr[j+1];
+                            }
+                            rchild.ptr[j] = rchild.ptr[j+1];
+                            rchild.num--;
+
+                            x.write(cur, Bptfile);
+                            child.write(x.ptr[i], Bptfile);
+                            rchild.write(x.ptr[i+1], Bptfile);
+                        }else{
+                            //L
+                            child.key[child.num] = x.key[i];
+                            child.num++;
+
+                            for(j = 0; j < rchild.num; j++){
+                                child.key[child.num+j] = rchild.key[j];
+                                child.ptr[child.num+j] = rchild.ptr[j];
+                            }
+                            child.ptr[child.num+j] = rchild.ptr[j];
+                            child.num += rchild.num;
+
+                            for(j = i; j < x.num; j++){
+                                x.key[j] = x.key[j+1];
+                                x.ptr[j+1] = x.ptr[j+2];
+
+                            }
+                            x.num--;
+
+                            x.write(cur, Bptfile);
+                            child.write(x.ptr[i], Bptfile);
+                        }
+                    }
+                }
+
+            }else{
+                if(child.key > size/2){
+                    //M
+                }else{
+                    if(i > 0){
+                        Node<T> lchild;
+                        lchild.read(x.ptr[i], Bptfile);
+
+                        if(lchild.num > size/2){
+                            //N
+                            for(j=child.num; j > 0; j--){
+                                child.key[j] = child.key[j-1];
+                                child.ptr[j] = child.ptr[j-1];
+                            }
+                            child.key[0] = x.key[i-1];
+                            child.ptr[0] = lchild.ptr[lchild.num-1];
+                            child.num++;
+                            lchild.num--;
+
+                            x.key[i-1] = lchild.key[lchild.num-1];
+
+                            lchild.write(x.ptr[i-1], Bptfile);
+                            child.write(x.ptr[i], Bptfile;)
+                            x.write(cur, Bptfile);
+
+
+                        }else{
+                            //O
+                            for(j = 0; j < child.num; j++){
+                                lchild.key[lchild.num+j] = child.key[j];
+                                lchild.ptr[lchild.num+j] = child.ptr[j];
+
+                            }
+                            lchild.num += child.num;
+
+                            for(j = i; j < x.num - 1; j++){
+                                x.key[j] = x.key[j+1];
+                                x.ptr[j+1] = x.ptr[j+2];
+                            }
+                            x.num--;
+
+                            lchild.write(x.ptr[i-1], Bptfile);
+                            x.write(cur, Bptfile);
+                            i--;
+
+
+                        }
+                    }else{
+                        Node<T> rchild;
+                        rchild.read(x.ptr[i+1], Bptfile);
+
+                        if(rchild.num > size/2){
+                            //P
+                            x.key[i] = rchild.key[0];
+                            child.key[child.num] = rchild.key[0];
+                            child.ptr[child.num] = rchild.ptr[0];
+                            child.num++;
+
+                            for(j = 0; j < rchild.num-1; j++){
+                                rchild.key[j] = rchild.key[j+1];
+                                rchild.ptr[j] = rchild.ptr[j+1];
+                            }
+                            rchild.num--;
+
+                            x.write(cur, Bptfile);
+                            rchild.write(x.ptr[i+1], Bptfile);
+                            child.write(x.ptr[i], Bptfile);
+                        }else{
+                            //Q
+                            for(j = 0; j < rchild.num; j++){
+                                child.key[child.num+j] = rchild.key[j];
+                                child.ptr[child.num+j] = rchild.ptr[j];
+
+                            }
+                            child.num += rchild.num;
+                            child.ptr[size] = rchild.ptr[size];
+
+                            
+                            for(j = 0; j < x.num-1; j++){
+                                x.key[j] = x.key[j+1];
+                                x.ptr[j] = x.ptr[j+1];
+                            }
+                            x.num--;
+
+                            x.write(cur, Bptfile);
+                            child.write(x.ptr[i], Bptfile);
+
+
+                        }
+                    }
+                }
+
+            }
+            delete(val, x.ptr[i]);
+
+        }
+
+    }
+
+}
+
+template <typename T>
+void bPlusTree<T>::delete(T val)
+{
+    delete(val, root);
+
+    Node<T> r;
+    r.read(root, Bptfile);
+
+    if(!r.isLeaf && root.num == 0){
+        root = root.ptr[0];
+    }
+}
