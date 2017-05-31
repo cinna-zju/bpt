@@ -3,7 +3,8 @@
 #include <fstream>
 #include <iostream>
 
-#define size 5
+//#define size 5
+
 using namespace std;
 
 typedef long offset;
@@ -19,8 +20,7 @@ public:
 
     Node(){
         //when constructed, malloc memory
-        // size = (4096 - sizeof(int) - sizeof(bool) - sizeof(offset))
-        //             /(sizeof(T) + sizeof(offset));
+
         key = (T*)malloc(sizeof(T)*size);
         ptr = (offset*)malloc(sizeof(offset)*size);
 
@@ -63,14 +63,19 @@ class bPlusTree{
 public:
     string fileName;
     offset root;//根在文件内的偏移量
+    int size;
     FILE *Bptfile;
     FILE *RecFile;
+
 
     void init(){
         root = newNode()+100;
 
         //cout<<"root addr:"<<root<<endl;
         Node<T> r;
+        r.size = (4096 - sizeof(int) - sizeof(bool) - sizeof(offset))
+                     /(sizeof() + sizeof(offset));
+
         r.ptr[size] = 0;
         r.num = 0;
         r.isLeaf = true;
@@ -90,6 +95,7 @@ public:
     ~bPlusTree(){
         fseek(Bptfile, 0, SEEK_SET);
         fwrite(&root, sizeof(offset), 1, Bptfile);
+        fwrite(&size, sizeof(int), 1, Bptfile);
         fclose(Bptfile);
     };
 
@@ -255,7 +261,7 @@ void bPlusTree<T>::print(offset cur)
             s.read(t.ptr[j], Bptfile);
             if(s.num!=0)
                 s.print();
-            
+
         }
     }
 
