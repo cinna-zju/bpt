@@ -69,7 +69,7 @@ public:
     void init(){
         root = newNode()+100;
 
-        cout<<"root addr:"<<root<<endl;
+        //cout<<"root addr:"<<root<<endl;
         Node<T> r;
         r.ptr[size] = 0;
         r.num = 0;
@@ -84,7 +84,9 @@ public:
     };
 
 public:
-    bPlusTree(string);
+    bPlusTree(string filename){
+        Bptfile = fopen(filename.c_str(), "wb+");
+    }
     ~bPlusTree(){
         fseek(Bptfile, 0, SEEK_SET);
         fwrite(&root, sizeof(offset), 1, Bptfile);
@@ -93,24 +95,19 @@ public:
 
     void insert(T, offset, offset);//insert in node at offset
     void insert(T, offset);//insert in tree
+    void deleteValue(T);
+    void deleteValue(T, offset);
     void split(Node<T>&, Node<T>&, int);
     void print(offset);
     void printLeaf();
     void getRoot(){
-        fseek(Bptfile, 0, SEEK_SET);
+        fseek(Bptfile, 100, SEEK_SET);
         fread(&root, sizeof(offset), 1, Bptfile);
     }
     offset search(T);
 
 
 };
-
-template <typename T>
-bPlusTree<T>::bPlusTree(string filename)
-{
-    Bptfile = fopen(filename.c_str(), "rb+");
-
-}
 
 //give (value, addr)
 //insert into the bPlusTree
@@ -211,7 +208,7 @@ void bPlusTree<T>::split(Node<T> &parent, Node<T> &cur, int idx)
     Node<T> t;
     offset address = newNode();
     //insert key into parent
-    parent.key[idx] = cur.key[half+1];
+    parent.key[idx] = cur.key[half];
     parent.ptr[idx+1] = address;
     parent.num++;
 
@@ -248,18 +245,9 @@ void bPlusTree<T>::print(offset cur)
     r.print();
     Node<T> t;
     for(int i = 0; i <= r.num; i++){
-        printf("(%d, %d)\n", 1, i);
         t.read(r.ptr[i],Bptfile);
         if(t.num != 0)
             t.print();
-
-        Node<T> s;
-        for(int j = 0; j <= t.num; j++){
-            printf("(%d, %d)\n", 2, j);
-            s.read(t.ptr[j], Bptfile);
-            if(s.num != 0)
-                s.print();
-        }
         cout<<"--------------------"<<endl;
     }
 
@@ -291,7 +279,7 @@ offset bPlusTree<T>::search(T val)
     r.read(root,Bptfile);
     while(r.isLeaf == false){
         int idx;
-        for(idx = 0; val >= r.key[idx] && idx < r.num; idx++)
+        for(idx = 0; val > r.key[idx] && idx < r.num; idx++)
         ;
         //cout<<val<<"-idx:"<<idx<<endl;
         r.read(r.ptr[idx], Bptfile);
@@ -306,7 +294,7 @@ offset bPlusTree<T>::search(T val)
 }
 
 template <typename T>
-void bPlusTree<T>::delete(T val, offset cur)
+void bPlusTree<T>::deleteValue(T val, offset cur)
 {
     int i, j;
     Node<T> x;
@@ -393,7 +381,7 @@ void bPlusTree<T>::delete(T val, offset cur)
                             child.key[child.num] = rchild.key[0];
                             child.ptr[child.num] = rchild.ptr[0];
                             child.num++;
-                        
+
 
                             for(j = 0; j < rchild.num - 1; j++){
                                 rchild.key[j] = rchild.key[j+1];
@@ -528,7 +516,7 @@ void bPlusTree<T>::delete(T val, offset cur)
                 }
 
             }
-            delete(val, x.ptr[i]);
+            deleteValue(val, x.ptr[i]);
 
         }else{
             //G
@@ -548,9 +536,10 @@ void bPlusTree<T>::delete(T val, offset cur)
             child.read(x.ptr[i], Bptfile);
 
             if(!child.isLeaf){
-                //H
-            }else{
-                else{
+                if(child.num > size/2){
+
+                }else{
+
                     if(i > 0){
                         Node<T> lchild;
                         lchild.read(x.ptr[i], Bptfile);
@@ -641,7 +630,7 @@ void bPlusTree<T>::delete(T val, offset cur)
                 }
 
             }else{
-                if(child.key > size/2){
+                if(child.num > size/2){
                     //M
                 }else{
                     if(i > 0){
@@ -662,7 +651,7 @@ void bPlusTree<T>::delete(T val, offset cur)
                             x.key[i-1] = lchild.key[lchild.num-1];
 
                             lchild.write(x.ptr[i-1], Bptfile);
-                            child.write(x.ptr[i], Bptfile;)
+                            child.write(x.ptr[i], Bptfile);
                             x.write(cur, Bptfile);
 
 
@@ -717,7 +706,7 @@ void bPlusTree<T>::delete(T val, offset cur)
                             child.num += rchild.num;
                             child.ptr[size] = rchild.ptr[size];
 
-                            
+
                             for(j = 0; j < x.num-1; j++){
                                 x.key[j] = x.key[j+1];
                                 x.ptr[j] = x.ptr[j+1];
@@ -733,7 +722,7 @@ void bPlusTree<T>::delete(T val, offset cur)
                 }
 
             }
-            delete(val, x.ptr[i]);
+            deleteValue(val, x.ptr[i]);
 
         }
 
@@ -742,14 +731,14 @@ void bPlusTree<T>::delete(T val, offset cur)
 }
 
 template <typename T>
-void bPlusTree<T>::delete(T val)
+void bPlusTree<T>::deleteValue(T val)
 {
-    delete(val, root);
+    deleteValue(val, root);
 
     Node<T> r;
     r.read(root, Bptfile);
 
-    if(!r.isLeaf && root.num == 0){
-        root = root.ptr[0];
+    if(!r.isLeaf && r.num == 0){
+        root = r.ptr[0];
     }
 }
