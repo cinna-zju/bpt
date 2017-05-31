@@ -105,6 +105,7 @@ public:
         fread(&root, sizeof(offset), 1, Bptfile);
     }
     offset search(T);
+    offset searchInNode(T);
 
 
 };
@@ -249,6 +250,13 @@ void bPlusTree<T>::print(offset cur)
         if(t.num != 0)
             t.print();
         cout<<"--------------------"<<endl;
+        for(int j = 0; j <= t.num; j++){
+            Node<T> s;
+            s.read(t.ptr[j], Bptfile);
+            if(s.num!=0)
+                s.print();
+            
+        }
     }
 
 }
@@ -292,6 +300,28 @@ offset bPlusTree<T>::search(T val)
     }
     return -1;
 }
+
+template <typename T>
+offset bPlusTree<T>::searchInNode(T val)
+{
+    int i;
+    Node<T> a;
+    offset cur = root;
+
+    do{
+        a.read(cur, Bptfile);
+        for(i = 0; i < a.num && val == a.key[i]; i++){
+            return cur;
+        }
+
+        cur = a.ptr[i];
+    }while(!a.isLeaf);
+
+    return -1;
+
+}
+
+
 
 template <typename T>
 void bPlusTree<T>::deleteValue(T val, offset cur)
@@ -416,11 +446,13 @@ void bPlusTree<T>::deleteValue(T val, offset cur)
                 }
             }else{
                 //F
-                offset result = search(val);
+                offset result = searchInNode(val);
                 Node<T> last;
                 last.read(result, Bptfile);
+
                 x.key[i] = last.key[last.num - 2];
                 x.write(cur, Bptfile);
+
 
                 if(child.num > size/2){
                     //H
